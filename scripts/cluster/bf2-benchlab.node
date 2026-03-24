@@ -1,0 +1,12 @@
+addr=10.0.0.15
+user=ubuntu
+nfs=0
+0:pci=0000:03:00.0
+0:ifname=mlx5_0
+0:mac=
+0:ip=
+1:pci=0000:03:00.1
+1:ifname=mlx5_1
+1:mac=
+1:ip=
+

@@ -1,0 +1,13 @@
+%bf2:script@bf2
+
+sudo killall -9 click
+sleep 1
+sleep $ENERGYDELAY
+sudo ${EXEC_PATH_DPU}/bin/click --dpdk -c 0xff -n 4 -a ${self:0:pci} -- -e "FromDPDKDevice(0, NDESC ${NDESC}, MAXTHREADS ${NTHREADS}, NUMA false) -> EtherMirror -> SetCRC32 -> Trim(4) -> ToDPDKDevice(0, NDESC ${NDESC}, BLOCKING false); DriverManager(print '', print 'EVENT APP_READY', wait);"
+
+%bf3:script@bf3
+
+sudo killall -9 click
+sleep 1
+sleep $ENERGYDELAY
+sudo ${EXEC_PATH_DPU}/bin/click --dpdk -c 0xffff -n 4 -a ${self:0:pci} -- -e "FromDPDKDevice(0, NDESC ${NDESC}, MAXTHREADS ${NTHREADS}, NUMA false) -> EtherMirror -> SetCRC32 -> Trim(4) -> ToDPDKDevice(0, NDESC ${NDESC}, BLOCKING false); DriverManager(print '', print 'EVENT APP_READY', wait);"

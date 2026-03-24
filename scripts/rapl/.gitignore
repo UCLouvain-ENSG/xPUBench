@@ -1,0 +1,3 @@
+*.o
+rapl-plot
+rapl-read

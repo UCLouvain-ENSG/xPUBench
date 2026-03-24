@@ -1,0 +1,11 @@
+addr=10.0.0.20
+user=tyunyayev
+nfs=0
+0:pci=0000:03:00.0
+0:ifname=p0
+0:mac=
+0:ip=
+1:pci=0000:03:00.1
+1:ifname=p1
+1:mac=
+1:ip=

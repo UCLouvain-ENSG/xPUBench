@@ -1,0 +1,26 @@
+%script@server jinja
+sudo killall -9 click doca_gpunetio_simple_receive
+sleep 1
+sleep $ENERGYDELAY
+echo "Launching server workload!"
+sudo LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${MY_CUDA_LD_LIBRARY_PATH}:${SERVER_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH CUDA_PATH_L=${MY_CUDA_PATH_L} GDRCOPY_PATH_L=${MY_GDRCOPY_PATH_L} ${PROFILE} ${EXEC_PATH_HOST}  \
+	--dpdk -l $FASTCLICK_CPUS -n 4 -a $(( "${self:0:pci}".split(":",1)[1] )){% if not $TXQ_INLINE %},txq_inline=$TXQ_INLINE{% endif %} \
+	 {% if USE_GPU %} -a ${GPU} {% endif %} -- ${FILE} ndesc=$NDESC nb_mbuf=$NB_MBUF
+echo "CLICK FINISHED"
+
+
+%file@server end.click jinja
+DriverManager(print '', print 'EVENT APP_READY',
+{% if PROFILE %}
+
+print 'Waiting 15s...',
+wait 15s
+{% else %}
+wait
+{% endif %},
+print "RESULT-DUT-DROPPED-TX "$(td.dropped),
+print "RESULT-DUT-DROPPED-COMM "$(gpu.dropped),
+read fd.xstats,
+);
+s :: Script(TYPE ACTIVE, set i 1, wait 5s, label begin_loop, print "TIME-$i-RESULT-CPULOAD $(add $(load))", set i $(s.add $i 1), wait 1s, goto begin_loop $(s.lt $i 7));
+

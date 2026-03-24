@@ -1,0 +1,21 @@
+%file@server setup_doca.sh 
+export LD_LIBRARY_PATH=/opt/mellanox/doca/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+export PKG_CONFIG_PATH=/opt/mellanox/doca/lib/x86_64-linux-gnu/pkgconfig:/opt/mellanox/flexio/lib/pkgconfig:/opt/mellanox/grpc/lib/pkgconfig:$PKG_CONFIG_PATH
+
+export LD_LIBRARY_PATH=/opt/mellanox/dpdk/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+export PKG_CONFIG_PATH=/opt/mellanox/dpdk/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+
+
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}}
+export PATH=/usr/local/cuda/bin/:$PATH
+
+sudo modprobe nvidia-peermem
+
+%gpu-doca:script@server jinja
+sudo killall -9 click doca_gpunetio_simple_receive &> /dev/null
+sleep 1
+sleep $ENERGYDELAY
+source setup_doca.sh
+cd $DOCA_FOLDER_HOST
+sudo CUDA_PATH_L=/usr/lib/x86_64-linux-gnu LD_LIBRARY_PATH=$LD_LIBRARY_PATH GDRCOPY_PATH_L=/opt/mellanox/gdrcopy/src $DOCA_FOLDER_HOST/build_${HOSTNAME}/doca_gpunetio_simple_receive -n $(( "${self:0:pci}".split(":",1)[1] )) -g ${GPU} -q ${QUEUES} -w ${WORKLOAD} -b ${BATCH} -m ${NDESC} {% if FNT == "iplookup" %} -f ${PATH_TO_TABLE}${TABLE_SIZE}.bin {% endif %}
+

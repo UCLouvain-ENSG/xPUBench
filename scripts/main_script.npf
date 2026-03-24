@@ -1,0 +1,363 @@
+%info
+Main NPF script to rerun the GPU project
+
+%late_variables
+
+//Use default options so we do not force re-run by introducing new variables
+GPU_BLOCKING?=false
+NB_MBUF?=1000000
+NDESC?=2048
+TXQ_INLINE?=1
+PROFILE?=
+TXPARA?=false
+TIMER?=1000
+gpu-doca:NDESC?=65536
+
+//For CPUFREQ and energy
+CPUFREQ_FORCE_RANGE=true
+ENERGYDELAY?=0
+
+// Click config files names
+cpu,bounce:FILE={dpdk-bounce.click}
+gpu-coalescent,bounce:FILE={gpu-bounce-coalescent.click}
+gpu-commlist,bounce:FILE={gpu-bounce-commlist.click}
+gpu-mw,bounce:FILE={gpu-bounce-mw.click}
+
+cpu,iplookup:FILE={dpdk-iplookup.click}
+gpu-coalescent,iplookup:FILE={gpu-iplookup-coalescent.click}
+gpu-commlist,iplookup:FILE={gpu-iplookup-commlist.click}
+gpu-mw,iplookup:FILE={gpu-iplookup-mw.click}
+
+cpu,crc:FILE={dpdk-crc.click}
+gpu-coalescent,crc:FILE={gpu-crc-coalescent.click}
+gpu-commlist,crc:FILE={gpu-crc-commlist.click}
+gpu-mw,crc:FILE={gpu-crc-mw.click}
+
+USE_GPU=0
+gpu-coalescent|gpu-commlist|gpu-mw:USE_GPU=1
+GPU=a1:00.0
+
+host:GENERATOR_PORT=EXPAND(${generatordpu:1:pci})
+bf2:GENERATOR_PORT_DPU=EXPAND(${generatordpu:0:pci})
+bf3:GENERATOR_PORT_DPU=EXPAND(${generatordpu:0:pci})
+dpa:GENERATOR_PORT_DPA=EXPAND(${generatordpa:0:pci})
+
+
+nikita:GENERATOR_LD_LIBRARY_PATH=/etinfo/users2/tyunyayev/Workspace/dpdk-23.03/install_$(hostname)/lib/x86_64-linux-gnu
+nikita:GENERATOR_PATH=/etinfo/users2/tyunyayev/Workspace/Pktgen-DPDK/build_$(hostname)/app/pktgen
+
+nikita:GENERATOR_DPA_LD_LIBRARY_PATH=/etinfo/users2/tyunyayev/Workspace/dpdk-23.03/install_$(hostname)/lib/x86_64-linux-gnu
+nikita:GENERATOR_DPA_PATH=/etinfo/users2/tyunyayev/Workspace/Pktgen-DPDK/build_$(hostname)/app/pktgen
+
+nikita:SERVER_LD_LIBRARY_PATH=/etinfo/users2/tyunyayev/Workspace/dpdk-gpu/install_sauron/lib/x86_64-linux-gnu
+nikita:FASTCLICK_FOLDER_DPU=/home/mvanliefde/fastclick-dpu/bin
+nikita:EXEC_PATH_HOST=/etinfo/users2/tyunyayev/Workspace/fastclick-gpu/bin/click
+nikita:DOCA_FOLDER_HOST=/etinfo/users2/tyunyayev/Workspace/doca-app-improved
+
+nikita:DPA_EXEC_PATH=/home/tyunyayev/dpa-xpu
+nikita:PATH_TO_TABLE_DPA=../
+nikita:EXEC_PATH_DPU=/home/mvanliefde/fastclick-dpu
+nikita,bf2:EXEC_PATH_DPU=/home/ubuntu/fastclick-dpu
+
+-tom:FASTCLICK_CPUS?=16-31
+tom:FASTCLICK_CPUS?=0-23
+tom:FASTCLICK_FOLDER_DPU=/home/ubuntu/fastclick_dpu/bin
+tom:EXEC_PATH_HOST=/etinfo/users2/tbarbette/workspace/gpu-npf/fastclick/bin/click
+tom:EXEC_PATH_DOCA=/etinfo/users2/tyunyayev/Workspace/doca-app-improved/build/doca_gpunetio_simple_receive
+tom:GENERATOR_LD_LIBRARY_PATH="/etinfo/users/2021/rvanhauwaert/dpdk-23.03/dpdk/install-sam/lib/x86_64-linux-gnu/:"
+tom:GENERATOR_PATH="/etinfo/users/2021/rvanhauwaert/dpdk-23.03/Pktgen-DPDK/usr/local/bin/pktgen"
+
+romain:GENERATOR_LD_LIBRARY_PATH="/etinfo/users/2021/rvanhauwaert/dpdk-23.03/dpdk/install-sam/lib/x86_64-linux-gnu/:"
+romain:GENERATOR_PATH="/etinfo/users/2021/rvanhauwaert/dpdk-23.03/Pktgen-DPDK/usr/local/bin/pktgen"
+
+maxime:GENERATOR_LD_LIBRARY_PATH=/etinfo/users2/tyunyayev/Workspace/dpdk-23.03/install_sam/lib/x86_64-linux-gnu/
+maxime:GENERATOR_PATH=/etinfo/users2/tyunyayev/Workspace/Pktgen-DPDK/build_sam/app/pktgen
+
+maxime:SERVER_LD_LIBRARY_PATH=/etinfo/users/2021/mvanliefde/dpdk/install_sauron/lib/x86_64-linux-gnu/
+maxime:FASTCLICK_FOLDER_DPU=/home/mvanliefde/fastclick-dpu/bin
+maxime:EXEC_PATH_DPU=/home/mvanliefde/fastclick-dpu
+maxime:EXEC_PATH_HOST=/etinfo/users2/mvanliefde/fastclick-gpu/bin/click
+maxime:DOCA_FOLDER_HOST=/etinfo/users2/mvanliefde/doca-app-improved/
+maxime:PATH_TO_TABLE=/etinfo/users2/mvanliefde/table_files/saved_vector
+
+
+MY_CUDA_PATH_L=/usr/lib/x86_64-linux-gnu
+MY_CUDA_LD_LIBRARY_PATH=/usr/local/cuda/lib64
+MY_GDRCOPY_PATH_L=/opt/mellanox/gdrcopy/src
+
+// for DOCA
+bounce,gpu-doca:WORKLOAD={0}
+iplookup,gpu-doca:WORKLOAD={1}
+crc,gpu-doca:WORKLOAD={2}
+
+clickgen:GEN_RATE=EXPAND($(( $RATE * 1000 )) )
+clickgen:GEN_PAUSE=unset
+clickgen:GEN_LENGTH=EXPAND($SIZE)
+
+%variables
+
+//PROFILE=
+gdb:PROFILE=gdb -batch -ex run -ex where -ex quit  --args
+profile:PROFILE=nsys profile 
+
+uncore:UNCORE_PSTATE={0,1,2}
+uncore,gpu-doca:UNCORE_PSTATE=2
+uncore:UNCORE_SOCKET=1
+
+crc:FNT={crc}
+ethermirror:FNT={ethermirror}
+iplookup:FNT={iplookup}
+
+defaultfreq:CPUFREQ=3000
+freq:CPUFREQ={800,1600,2400,3000,4000}
+defaultfreq:CPUFREQ=2400
+freq,tom:CPUFREQ={800,1600,2400,3000,4000}
+freq,nikita:CPUFREQ={800,1600,2400,3000}
+energy:ENERGYDELAY=10
+energy:CPUFREQ_GOVERNOR=powersave
+energy:NTHREADS={1,2,4,8,16}
+
+energyfreq:CPUFREQ={800,1500,2500}
+energyfreq,gpu-doca:CPUFREQ={800}
+
+TIME=10
+energy:TIME=20
+profile|perf:TIME=60
+
+// CPU and GPU
+
+// ZLT exploration
+
+// ZLT
+{
+    //gpu-doca:RATE={20,35,60,85,100},
+    gpu-doca:RATE={100,100,100,100,100},
+    gpu-doca:SIZE={64,128,256,512,1024}
+}
+
+-gpu-doca:RATE=100
+-gpu-doca:SIZE=[64*1024]
+
+comparison_lat:SIZE=128
+
+comparison_lat,bounce:RATE=[1-60#6]
+
+comparison_lat,crc:RATE=[1-60#6]
+comparison_lat,crc,bf2:RATE=[1-10#1]
+comparison_lat,crc,bf3:RATE=[1-60#3]
+comparison_lat,crc,dpa:RATE=[1-60#3]
+
+comparison_lat,iplookup,ip1k:RATE=[1-60#6]
+comparison_lat,iplookup,ip1k,cpu:RATE=[1-20#4]
+comparison_lat,iplookup,ip1k,gpu-commlist:RATE=[1-30#6]
+comparison_lat,iplookup,ip1k,gpu-coalescent:RATE=[1-60#6]
+comparison_lat,iplookup,ip1k,bf2:RATE=[1-5#0.5]
+comparison_lat,iplookup,ip1k,bf3:RATE=[1-6#0.5]
+comparison_lat,iplookup,ip1k,dpa:RATE=[1-5#0.5]
+
+comparison_lat,iplookup,ip10k:RATE=[1-5#1]
+comparison_lat,iplookup,ip10k,gpu-doca:RATE=[1-15#3]
+comparison_lat,iplookup,ip10k,bf3:RATE=[1-2#0.1]
+comparison_lat,iplookup,ip10k,dpa:RATE=[1-2#0.1]
+
+gpu_scalability_batch,bounce:RATE=[1-20#1]
+gpu_scalability_batch,crc:RATE=[1-20#1]
+gpu_scalability_batch,iplookup,ip1k:RATE=[1-6#0.2]
+gpu_scalability_batch,gpu-mw:RATE=[1-10#1]
+
+gpu_scalability_batch:SIZE=128 //[64*1024]
+
+gpu_scalability_batch:TIMER=1000 //{50,100,150,200,1000}
+
+gpu_scalability_batch,timer_exploration:TIMER={50,100,150,200}
+
+energy,bounce:RATE={10,100}
+energy,crc:RATE={10,20,30,40,50,100}
+energy,crc,cpu:RATE={10,20,30,40,50}
+energy,crc,gpu-coalescent:RATE={10,20,30,40,50}
+energy,dpa,crc:RATE={10,20}
+energy:SIZE=1024
+
+fixed_rate:RATE=1
+
+gpu_only_scalability_batch:SIZE=128
+gpu_only_scalability_batch:RATE=[1-40#1]
+
+// cpu_gpu_scalability:SIZE=128
+
+// CPU Scalability
+cpu,cpu_scalability,bounce:NTHREADS=[1*4]
+cpu,cpu_scalability,crc:NTHREADS=[1*16]
+cpu,-bounce,cpu_scalability,energy:NTHREADS={1,4,16}
+dpa:NTHREADS=254
+
+// Best
+cpu,-cpu_scalability:NTHREADS=16
+
+// DPU Scalability
+dpu_scalability,dpu,bf2:NTHREADS=[1*8]
+dpu_scalability,dpu,bf3:NTHREADS=[1*16]
+
+// Best
+-dpu_scalability,dpu,bf2:NTHREADS={8}
+-dpu_scalability,dpu,bf3:NTHREADS={16}
+
+// CPU-GPU Scalability
+cpu_gpu_scalability,gpu-mw:NTHREADS=[1*16]
+cpu_gpu_scalability,gpu-commlist:NTHREADS=[1*16]
+cpu_gpu_scalability,gpu-coalescent:NTHREADS=[1*16]
+cpu_gpu_scalability,energy:NTHREADS={1,4,16}
+gpu_scalability:NTHREADS=1
+gpu_scalability_batch:NTHREADS=1
+
+comparison,gpu-coalescent|comparison_lat,gpu-coalescent:NTHREADS=16
+comparison,gpu-commlist|comparison_lat,gpu-commlist:NTHREADS=8
+comparison,gpu-commlist,ip1k|comparison_lat,gpu-commlist,ip1k:NTHREADS=4
+comparison,gpu-commlist,ip10k|comparison_lat,gpu-commlist,ip10k:NTHREADS=8
+
+// GPU
+gpu_scalability_batch:BATCH=[32*1024]
+gpu_scalability_batch,timer_exploration:BATCH=1024
+
+-gpu_scalability_batch,gpu-commlist:BATCH=1024
+-gpu_scalability_batch,gpu-coalescent:BATCH=1024
+-gpu_scalability_batch,gpu-mw:BATCH=1024
+
+comparison,bounce,gpu-coalescent|comparison,bounce,gpu-commlist|comparison_lat,bounce,gpu-coalescent|comparison_lat,bounce,gpu-commlist:BATCH=512
+comparison,crc,gpu-coalescent|comparison,crc,gpu-commlist|comparison_lat,crc,gpu-coalescent|comparison_lat,crc,gpu-commlist:BATCH=512
+comparison,iplookup,gpu-coalescent|comparison,iplookup,gpu-commlist|comparison_lat,iplookup,gpu-coalescent|comparison_lat,iplookup,gpu-commlist:BATCH=512
+
+comparison_lat,gpu-commlist:TIMER=500
+comparison_lat,gpu-coalescent:TIMER=500
+
+gpu-coalescent:LISTSorQUEUES_PER_CORE=4
+gpu-commlist:LISTSorQUEUES_PER_CORE=1
+gpu-mw:LISTSorQUEUES_PER_CORE=1
+gpu_scalability:LISTSorQUEUES_PER_CORE=[1*4]
+comparison,gpu-coalescent:LISTSorQUEUES_PER_CORE=4
+comparison,gpu-commlist:LISTSorQUEUES_PER_CORE=1
+comparison,gpu-commlist,ip10k:LISTSorQUEUES_PER_CORE=4
+
+//TXQ_INLINE=1
+gpu-commlist:TXQ_INLINE=0
+
+gpu-doca:NTHREADS=1
+gpu-coalescent|gpu-commlist|gpu-mw:CAPACITY={256}
+
+gpu_only_scalability,gpu-doca:QUEUES=[1*16]
+-gpu_only_scalability,gpu-doca:QUEUES=16
+-gpu_only_scalability,gpu-doca,iplookup,ip10k:QUEUES=16
+
+gpu_only_scalability_batch,gpu-doca:BATCH=[32*1024]
+-gpu_only_scalability_batch,gpu-doca:BATCH=512
+fixed_rate:BATCH=32
+
+// Only Coalescent
+gpu-coalescent|gpu-mw:ZEROCOPY={false} //{true,false}
+
+// Only Commlist
+gpu-commlist:MEMPOOL_GPU={true}
+gpu-commlist,cpu_gpu_scalability:MEMPOOL_GPU={true,false}
+gpu-commlist:PERSISTENT_KERNEL={true} //{true,false}
+
+dpu,bf2:NDESC=256
+dpu,bf3:NDESC=1024
+gpu-doca:NDESC=4096 //{65536,4096}
+
+// IP Lookup only
+iplookup:TABLE_SIZE=10000 //{100,1000,10000,100000,1000000}
+iplookup,ip1k:TABLE_SIZE=1000
+
+
+%config
+var_lim={RX-RATE-PPS:0-50,RX-RATE-MBPS:0-100,LOSE-RATE:0-1,AVG-LAT:0-500, GPU-POWER:0-80, IPMI-POWER:0-, RAPL-POWER:0-100, SUM-POWER:0-, CPULOAD:0-1, PPJ:0-,NTHREADS:0-8}
+var_names={LOSE-RATE:Loss rate,AVG-LAT:Average Latency,RX-RATE-PPS:Throughput,RX-RATE-MBPS:Throughput,GPU-POWER:GPU Power Consumption,CPULOAD-ALL:CPU Load,IPMI-POWER:Total Power Consumption,PPJ:Energy Efficiency,RAPL-POWER:CPU Power Consumption,SIZE:Packet size [B],NTHREADS:Number of CPU cores,BATCH: Batch size,CAPACITY: List capacity,LISTSorQUEUES_PER_CORE: Number of lists per core,ZEROCOPY: Zerocopy,MEMPOOL_GPU: Memory pool on GPU,PERSISTENT_KERNEL: Persistent kernels,QUEUES:Number of queues}
+var_divider={RX-RATE-PPS:1000000, RX-RATE-MBPS:1000, AVG-LAT:0.000001, PPJ:1000}
+var_format={RX-RATE-PPS:%dMpps, RX-RATE-MBPS:%dGbps, AVG-LAT:%dµs, GPU-POWER:%dW, IPMI-POWER:%dW, RAPL-POWER:%dW, SUM-POWER:%dW, PPJ:%dkppJ}
+-rate:var_hide={RATE}
+-rate:var_aggregate={RATE:all}
+freq:var_serie={CPUFREQ}
+
+results_expect={RX-GOODPUT-MBPS-PKTGEN}
+-dpa,-bf2,-bf3:results_expect+={PDU-POWER-ALL}
+
+graph_type=line
+//graph_legend=false
+cpu_scalability|cpu_gpu_scalability|dpu_scalability:graph_serie=NTHREADS
+gpu_only_scalability_batch:graph_serie=BATCH
+//graph_serie=SCALE
+//graph_combine_variables={NTHREADS+LISTSorQUEUES_PER_CORE:SCALE}
+graph_legend_loc=outer lower center
+graph_legend_ncol={4}
+graph_tick_params={direction:in,which:both,axis:both,grid_linestyle:dotted,bottom:true,top:true,right:true,left:true,grid_color:#444444}
+var_grid=true
+graph_fillstyle=none
+graph_legend_params={fancybox:0,edgecolor:black,framealpha:1.0}
+comparison:graph_color={1,3,3,4,4,4,5}
+comparison:graph_lines={-,-,--,-,--,:,-}
+
+-energy:accept_zero={LOSE-RATE,AVG-LAT,PDU-POWER,PDU-POWER-ALL,PDU-POWER-MAX,DUT-DROPPED-TX,RX-GOODPUT-GBPS-PKTGEN}
+energy:accept_zero={INIT-BENCHLAB-EPS1,INIT-BENCHLAB-3.3V,INIT-BENCHLAB-5V,INIT-BENCHLAB-5VSB,INIT-BENCHLAB-12V,INIT-BENCHLAB-PCIE8_2,INIT-BENCHLAB-PCIE8_3,INIT-BENCHLAB-HPWR1,LOSE-RATE,AVG-LAT,PDU-POWER,PDU-POWER-ALL,PDU-POWER-MAX,DUT-DROPPED-TX,RX-GOODPUT-GBPS-PKTGEN,BENCHLAB-EPS1,BENCHLAB-3.3V,BENCHLAB-5V,BENCHLAB-5VSB,BENCHLAB-12V,BENCHLAB-PCIE8_2,BENCHLAB-PCIE8_3,BENCHLAB-HPWR1,BENCHLAB-HPWR2,INIT-BENCHLAB-HPWR2,INIT-BENCHLAB-PCIE8_1,BENCHLAB-PCIE8_1}
+
+timeout=120
+profile:timeout=120
+n_runs=3
+
+%cpu|gpu-coalescent|gpu-commlist|gpu-mw:include shared/script-workload.npf
+%gpu-doca:include shared/doca-workload.npf
+%dpa:include shared/dpa-workload.npf
+
+%-dpa,-bf2,-bf3:include shared/uncore.npf
+
+%dpu,crc:include crc/workload-dpu.npf
+%dpu,iplookup:include iplookup/workload-dpu.npf
+%dpu,bounce:include ethermirror/workload-dpu.npf
+
+%cpu|gpu-coalescent|gpu-commlist|gpu-mw|gpu-doca:include shared/script-generator.npf
+%dpu:include shared/script-generator-dpu.npf
+%dpa:include shared/script-generator-dpa.npf
+
+%cpu,bounce:include ethermirror/dpdk-bounce.click
+%gpu-coalescent,bounce:include ethermirror/gpu-bounce-coalescent.click
+%gpu-commlist,bounce:include ethermirror/gpu-bounce-commlist.click
+%gpu-mw,bounce:include ethermirror/gpu-bounce-mw.click
+
+%cpu,iplookup:include iplookup/dpdk-iplookup.click
+%gpu-coalescent,iplookup:include iplookup/gpu-iplookup-coalescent.click
+%gpu-commlist,iplookup:include iplookup/gpu-iplookup-commlist.click
+%gpu-mw,iplookup:include iplookup/gpu-iplookup-mw.click
+
+%cpu,crc:include crc/dpdk-crc.click
+%gpu-coalescent,crc:include crc/gpu-crc-coalescent.click
+%gpu-commlist,crc:include crc/gpu-crc-commlist.click
+%gpu-mw,crc:include crc/gpu-crc-mw.click
+
+%-bf2,-dpa,-bf3:import@server shared/script-power.npf
+%benchlab,-dpa,-bf3,-bf2:import@generatordpu shared/benchlab.npf
+%benchlab,dpa:import@manager shared/benchlab.npf
+%benchlab,bf3:import@manager shared/benchlab.npf
+%benchlab,bf2:import@manager shared/benchlab.npf
+// %bf2:import@server shared/script-power.npf POWPREFIX=DPU- POWSOCKET=0 PDUIDX=4
+//%bf2:import@bf2host shared/script-power.npf POWPREFIX=DPU- POWSOCKET=0
+// %bf3:import@bf3host shared/script-power.npf POWPREFIX=DPU-
+
+%include shared/cfg.lua
+%dpu:include shared/cfg-dpu.lua
+%dpa:include shared/cfg-dpa.lua
+
+%include shared/pyexit.npf
+%-dpa,-bf2,-bf3:import@server cpufreq-script-v2
+
+%perf:import@server perf-class waitfor=PKTGEN_READY PERF_TIME=2 delay=2
+
+%clickgen:import@generatorhost fastclick-play-single-mt waitfor=APP_READY delay=0
+
+%pcm:script@server sudo=true delay=3 autokill=false waitfor=PKTGEN_READY
+echo "Launching PCM"
+killall pcm-pcie &> /dev/null
+pcm-pcie -B -silent /csv 1 -- sleep 3 > pcm.csv
+echo "RESULT-PCIERD $(cat pcm.csv | tail -n 1 | awk -F, '{print $(NF-1)}')"
+echo "RESULT-PCIEWR $(cat pcm.csv | tail -n 1 | awk -F, '{print $(NF)}')"
+echo "Done."
+cat pcm.csv
+sleep 10

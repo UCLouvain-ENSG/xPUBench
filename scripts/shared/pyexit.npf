@@ -1,0 +1,59 @@
+%pyexit
+
+// Lose rate can get negative if more packets are received than send; 
+if RESULTS.get("LOSE-RATE") == None:
+    RESULTS["LOSE-RATE"] = 0
+
+if RESULTS.get("RX-RATE-PPS") == None:
+    RESULTS["RX-RATE-PPS"] = 0
+
+if RESULTS.get("RX-RATE-MBPS") == None:
+    RESULTS["RX-RATE-MBPS"] = 0
+
+if RESULTS.get("AVG-LAT") == None:
+    RESULTS["AVG-LAT"] = 0
+
+print("Computing goot rate pc..")
+RESULTS["GOODRATEPC"] = (1 - RESULTS["LOSE-RATE"]) * 100
+
+// Power compute
+import numpy as np
+for kind,results in KIND_RESULTS.items():
+    //print(KIND_RESULTS)
+
+    // from npf doc
+    d={}
+    for time, kv in results.items():
+        for k,v in kv.items():
+            d.setdefault(k,[])
+            d[k].append(v)
+    //print(d)
+    for k,vs in d.items():
+        try:
+            RESULTS[k + '-ALL'] = vs
+            RESULTS[k + '-MAX'] = sorted(vs)[-3:]
+        except Exception as e:
+            print("When handling ",k,e)
+
+    try:
+
+        // PPJ = packets per joule
+        //print(d.items())
+        if 'GPU-POWER' in d:
+            RESULTS["SUM-POWER-ALL"] = [d["GPU-POWER"][i] + d["RAPL-POWER"][i] for i in range(len(d["GPU-POWER"]))]
+            RESULTS["PPJ-SUM"]  = (np.array(RESULTS["RX-RATE-PPS"]) / np.mean(RESULTS["SUM-POWER-ALL"])).tolist()
+        if 'IPMI-POWER-ALL' in RESULTS:
+            RESULTS["PPJ-IPMI"] = (np.array(RESULTS["RX-RATE-PPS"]) / np.mean(RESULTS["IPMI-POWER-ALL"])).tolist()
+        if 'RAPL-POWER-ALL' in RESULTS:
+            RESULTS["PPJ-RAPL"] = (np.array(RESULTS["RX-RATE-PPS"]) / np.mean(RESULTS["RAPL-POWER-ALL"])).tolist()
+    except:
+        print("When doing power measurement")
+
+
+    try:
+
+        // click cpu load
+        if 'CPULOAD-ALL' in RESULTS:
+            RESULTS["CPULOAD-ALL"] = [value / NTHREADS for value in RESULTS["CPULOAD-ALL"]]
+    except:
+        print("Wjen doing final CPULOAD measure")

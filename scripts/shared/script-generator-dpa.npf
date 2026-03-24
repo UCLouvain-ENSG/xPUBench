@@ -1,0 +1,6 @@
+%dpa:script@generatordpa sudo=true waitfor=dpa-ready
+killall -9 pktgen
+export LD_LIBRARY_PATH=${GENERATOR_DPA_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH ${GENERATOR_DPA_PATH} -l 0-7  -a ${GENERATOR_PORT_DPA} -- -m [1/2/3:4/5/6].0 -P -f cfg-dpa.lua
+
+

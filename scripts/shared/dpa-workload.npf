@@ -1,0 +1,7 @@
+%dpa:script@dpa jinja 
+sudo killall -9 click
+sleep 1
+cd ${DPA_EXEC_PATH}
+sleep $ENERGYDELAY
+sudo bin_dpu/dpa_xpu --device_name=${dpa:0:ifname} --g_thread_num=${NTHREADS} --buffer_on_host=true {% if FNT == "iplookup" %} --ip_lookup ${PATH_TO_TABLE_DPA}${TABLE_SIZE}.bin {% endif %} {% if FNT == "crc" %} --compute_crc=true {% endif %} 
+

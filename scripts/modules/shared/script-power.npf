@@ -1,0 +1,70 @@
+%variables
+PDUIDX=6
+
+%file READ_POWER
+function rapl_power() {
+    ${NPF_TESTIE_PATH}/rapl/rapl-read >rapl.log
+    _SOCK=$1
+    local pw=$(cat rapl.log | grep package-$_SOCK | rev | cut -d ' ' -f 1 | rev)
+    echo $pw
+}
+
+
+function ipmi_power() {
+    sudo ${NPF_TESTIE_PATH}/ipmi/Linux/64bit/IPMICFG-Linux.x86_64 -dcmi power &> stats.log
+    local pw=$(cat stats.log | grep -i Instant | grep -oE "[0-9]+")
+    echo $pw
+}
+
+function gpu_power() {
+    local pw=$(nvidia-smi --query-gpu "power.draw" --format=csv,noheader,nounits)
+    echo $pw
+}
+
+function pdu_power() {
+    local pw=$(snmpget -Oqv -v2c -c public nenya iso.3.6.1.4.1.21317.1.3.2.2.2.2.1.1.4.$1 | tr -d '"')
+    echo $pw
+}
+
+%script sudo=false delay=1 autokill=false title=initpower
+echo "Sleeping for $(( max(0,$ENERGYDELAY - 2) ))secs before getting power measurement..."
+sleep $(( max(0,$ENERGYDELAY - 2) ))
+if [ -z "$POWSOCKET" ] ; then
+        POWSOCKET=1
+fi
+source READ_POWER
+raplpw=$(rapl_power $POWSOCKET) # measure during 1 sec
+gpupw=$(gpu_power)
+pdupw=$(pdu_power $PDUIDX)
+if [ "$HOSTNAME" == "jaskier" ] ; then
+    ipmipw=$(pdu_power 3)
+else
+    ipmipw=$(ipmi_power)
+fi
+echo "RESULT-INIT-${POWPREFIX}GPU-POWER $gpupw"
+echo "RESULT-INIT-${POWPREFIX}IPMI-POWER $ipmipw"
+echo "RESULT-INIT-${POWPREFIX}RAPL-POWER $raplpw"
+echo "RESULT-INIT-${POWPREFIX}PDU-POWER $pdupw"
+
+%script sudo=false waitfor=PKTGEN_READY delay=2 autokill=false title=power
+source READ_POWER
+if [ -z "$POWSOCKET" ] ; then
+        POWSOCKET=1
+fi
+
+
+while true; do
+    i=$(date +%s.%N)
+    raplpw=$(rapl_power $POWSOCKET) # measure during 1 sec
+    gpupw=$(gpu_power)
+    pdupw=$(pdu_power $PDUIDX)
+    if [ "$HOSTNAME" == "jaskier" ] ; then
+        ipmipw=$(pdu_power 3)
+    else
+        ipmipw=$(ipmi_power)
+    fi
+    echo "TIME-$i-RESULT-${POWPREFIX}GPU-POWER $gpupw"
+    echo "TIME-$i-RESULT-${POWPREFIX}IPMI-POWER $ipmipw"
+    echo "TIME-$i-RESULT-${POWPREFIX}RAPL-POWER $raplpw"
+    echo "TIME-$i-RESULT-${POWPREFIX}PDU-POWER $pdupw"
+done

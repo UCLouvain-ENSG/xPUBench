@@ -1,0 +1,23 @@
+%file dpdk-iplookup.click
+
+// Size of the mempool to allocate
+define ($nb_mbuf 65535)
+
+// Number of descriptors per ring
+define ($ndesc 2048)
+
+// number of cores receiving and processing packets
+define ($threads ${NTHREADS})
+
+info :: DPDKInfo($nb_mbuf)
+
+FromDPDKDevice(0, NDESC $ndesc, MAXTHREADS $threads, NUMA false)
+        -> EtherMirror
+        -> Strip(14)
+        -> GetIPAddress(16)
+        -> r :: LinearIPLookup(CACHE_FILE ${PATH_TO_TABLE}${TABLE_SIZE}.bin)
+        -> Unstrip(14)
+        -> ToDPDKDevice(0, NDESC $ndesc, MAXTHREADS $threads, BLOCKING false);
+
+DriverManager(print '', print 'EVENT APP_READY', wait);
+s :: Script(TYPE ACTIVE, set i 1, wait 5s, label begin_loop, print "TIME-$i-RESULT-CPULOAD $(add $(load))", set i $(s.add $i 1), wait 1s, goto begin_loop $(s.lt $i 7));

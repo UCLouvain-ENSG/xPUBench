@@ -1,0 +1,66 @@
+%info
+This is not an experiment, this is a module to be imported using "%import" to set the
+CPU frequency
+
+This module sets the CPU frequency to a given value using cpupower
+
+You can specify which cores to apply the settings with CPUFREQ_CORES=%. If not specified, settings will
+be applied to all cores of the system.
+
+If no CPUFREQ is given, the default limits are set.
+If the CPUFREQ_CORES are specified and no frequency is specified, it is safer to 
+set also the NUMA, although limit requencies should be equal on different sockets.
+
+Set SILENT if you use '--show-all' and you want a cleaner output.
+
+
+//%import@client cpufreq CPUFREQ=1200 [CPUFREQ_CORES=18-25] [CPUFREQ_NUMA=1] [CPUFREQ_SILENT=1]
+
+
+%config
+require_tags={import}
+
+%variables
+CPUFREQ= //This must be passed by the script absolutely
+CPUFREQ_NUMA=
+CPUFREQ_CORES=
+CPUFREQ_SILENT=
+CPUFREQ_GOVERNOR?=performance
+
+%late_variables
+CPUFREQ_CPUCORES?= $(("-c $CPUFREQ_CORES" if "$CPUFREQ_CORES" != "" else "" ))
+CPUFREQ_NUMA?=0
+CPUFREQ_FIRST_ONLY= $(( "| head -n1" if "$CPUFREQ_SILENT" else "" ))
+CPUFREQ_FORCE_RANGE?=false
+
+%script sudo=true autokill=false
+echo "Setting $CPUFREQ_CPUCORES to $CPUFREQ"
+if [ -n "$CPUFREQ" ] ; then
+    if [ $CPUFREQ -gt 10000 ] ; then
+        UNIT=
+    else
+        UNIT=M
+    fi
+    if [ $CPUFREQ_FORCE_RANGE -o -e "/sys/devices/system/cpu/intel_pstate" -o $CPUFREQ_FORCE_RANGE ] ; then
+        cpupower ${CPUFREQ_CPUCORES} frequency-set -u ${CPUFREQ}${UNIT} -d ${CPUFREQ}${UNIT} ${CPUFREQ_FIRST_ONLY}
+        echo "CPU Frequency set to ${CPUFREQ} through pstate range"
+    else
+        cpupower ${CPUFREQ_CPUCORES} frequency-set -f ${CPUFREQ}${UNIT} ${CPUFREQ_FIRST_ONLY}
+        echo "CPU Frequency set to ${CPUFREQ}${UNIT}"
+    fi
+else
+
+    if [ -n "$CPUFREQ_NUMA" ];then
+       # Obtain the first CPU of this NUMA node
+       FIRST_CPU=$(lscpu |egrep "NUMA node${CPUFREQ_NUMA}.*:"| sed -e "s/\(.*: *\)\([0-9]*\)\(.*\)/\2/g")
+    else
+	     FIRST_CPU=0
+    fi
+    min=$(cat /sys/devices/system/cpu/cpu${FIRST_CPU}/cpufreq/cpuinfo_min_freq)
+    max=$(cat /sys/devices/system/cpu/cpu${FIRST_CPU}/cpufreq/cpuinfo_max_freq)
+    echo "CPU Frequency set to default $min-$max through pstate range"
+    sudo cpupower ${CPUFREQ_CPUCORES} frequency-set -u ${max}K -d ${min}K ${CPUFREQ_FIRST_ONLY}
+fi
+
+cpupower ${CPUFREQ_CPUCORES} frequency-set -g ${CPUFREQ_GOVERNOR} ${CPUFREQ_FIRST_ONLY}
+echo "CPU Frequency set to ${CPUFREQ_GOVERNOR}"

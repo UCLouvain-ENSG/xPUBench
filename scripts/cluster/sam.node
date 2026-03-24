@@ -1,0 +1,15 @@
+0:pci=0000:01:00.0
+0:ifname=enp1s0f0
+0:mac=6c:b3:11:21:c6:30
+1:pci=0000:01:00.1
+1:ifname=enp1s0f1
+1:mac=6c:b3:11:21:c6:31
+2:pci=0000:06:00.0
+2:ifname=eno1
+2:mac=
+3:pci=0000:07:00.0
+3:ifname=eno2
+3:mac=
+4:pci=1:13.2
+4:ifname=usb0
+4:mac=

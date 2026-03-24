@@ -1,0 +1,33 @@
+%file gpu-iplookup-coalescent.click
+
+// Size of the mempool to allocate
+define ($nb_mbuf 65535)
+
+// Number of descriptors per ring
+define ($ndesc 2048)
+
+// A batch must contain at most 1024 packets
+define ($batch ${BATCH})
+define ($burst 32)
+define ($minbatch $((${BATCH}-32))) // has to be $batch - $burst
+
+// number of cores receiving and processing packets
+define ($maxthreads ${NTHREADS})
+
+// each thread has `queues_per_core` lists of size `capacity`
+define ($capacity ${CAPACITY})
+define ($queues_per_core ${LISTSorQUEUES_PER_CORE})
+
+// If true, GPU directly accesses CPU memory
+define ($zerocopy ${ZEROCOPY})
+
+info :: DPDKInfo($nb_mbuf)
+
+FromDPDKDevice(0, NDESC $ndesc, MAXTHREADS $maxthreads, BURST $burst, NUMA false) 
+    -> EtherMirror()
+    -> MinBatch($minbatch, TIMER ${TIMER})
+    -> GPUIPLookupWithCopy(VERBOSE false, CAPACITY $capacity, MAX_BATCH $batch, QUEUES_PER_CORE $queues_per_core, ZEROCOPY $zerocopy, COPYBACK true, CACHE_FILE ${PATH_TO_TABLE}${TABLE_SIZE}.bin) 
+    -> td :: ToDPDKDevice(0, NDESC $ndesc, MAXTHREADS $maxthreads, BLOCKING false)
+
+
+require(library end.click)

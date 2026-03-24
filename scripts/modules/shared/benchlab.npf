@@ -1,0 +1,10 @@
+%script sudo=false delay=1 autokill=false title=initpower
+sleep $(( max(0,$ENERGYDELAY - 2) ))
+python3 ../benchlab.py "RESULT-INIT-BENCHLAB-"
+
+%script sudo=false waitfor=PKTGEN_READY delay=2 autokill=false title=power
+while true; do
+    i=$(date +%s.%N)
+    python3 ../benchlab.py "$i-RESULT-BENCHLAB-"
+    sleep 1
+done

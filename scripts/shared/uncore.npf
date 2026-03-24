@@ -1,0 +1,12 @@
+%uncore:script@server sudo=true autokill=false
+echo "Setting uncore frequency"
+sudo modprobe amd_hsmp
+amd_uncore_controller ${UNCORE_SOCKET} set ${UNCORE_PSTATE}
+amd_uncore_controller ${UNCORE_SOCKET} get
+
+%-uncore:script@server sudo=true autokill=false
+echo "Disabling uncore frequency control"
+sudo modprobe -r amd_hsmp
+sudo lsmod | grep hsmp
+
+

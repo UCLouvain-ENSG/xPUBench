@@ -1,0 +1,37 @@
+%file gpu-crc-mw.click
+
+define ($nb_mbuf 65535)
+define ($batch ${BATCH})
+define ($burst 32)
+
+define ($maxthread ${NTHREADS})   // max 6
+
+define ($capacity ${CAPACITY})
+define ($queues_per_core ${LISTSorQUEUES_PER_CORE})
+
+info :: DPDKInfo($nb_mbuf)
+
+define ($masterthread 6)
+StaticThreadSched(p $masterthread)
+
+define ($zerocopy ${ZEROCOPY})
+define ($max_pkt_size ${SIZE})
+
+fromdpdk :: FromDPDKDevice(0, NDESC 2048, BURST $burst, MAXTHREADS $maxthread, NUMA false) 
+todpdk :: ToDPDKDevice(0, NDESC 2048, MAXTHREADS $maxthread) 
+
+fromdpdk -> EtherMirror -> CPUPaint()
+    -> p :: Pipeliner(BURST $burst, BLOCKING false, ALWAYS_UP false, PREFETCH true)
+    -> ConstantBatch($batch, TIMER ${TIMER})
+    -> GPUSetCRC32Coalescent(MAX_PKT_SIZE $max_pkt_size, VERBOSE false, CAPACITY $capacity, MAX_BATCH $batch, QUEUES_PER_CORE $queues_per_core, ZEROCOPY $zerocopy) 
+    -> switch :: PaintSwitch()
+
+switch[0] -> p0 :: Pipeliner(THREAD 0) -> [0]todpdk
+switch[1] -> p1 :: Pipeliner(THREAD 1) -> [0]todpdk
+switch[2] -> p2 :: Pipeliner(THREAD 2) -> [0]todpdk
+switch[3] -> p3 :: Pipeliner(THREAD 3) -> [0]todpdk
+switch[4] -> p4 :: Pipeliner(THREAD 4) -> [0]todpdk
+switch[5] -> p5 :: Pipeliner(THREAD 5) -> [0]todpdk
+
+DriverManager(print '', print 'EVENT APP_READY', wait);
+s :: Script(TYPE ACTIVE, set i 1, wait 5s, label begin_loop, print "TIME-$i-RESULT-CPULOAD $(add $(load))", set i $(s.add $i 1), wait 1s, goto begin_loop $(s.lt $i 7));

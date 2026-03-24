@@ -1,0 +1,39 @@
+%info
+Baseline Results
+
+%late_variables
+FILE={dpdk-baseline.click}
+RATE={100}  // Latency computation needs an Ethermirror
+
+%variables
+SIZE=[64*1024]
+NTHREADS=[1*4]
+
+%config
+var_lim={RX-RATE-PPS:0-50,RX-RATE-MBPS:0-100,LOSE-RATE:0-1}
+var_names={LOSE-RATE:Loss rate,RX-RATE-PPS:Throughput,RX-RATE-MBPS:Throughput,SIZE:Packet size (B),NTHREADS:Number of cores}
+var_divider={RX-RATE-PPS:1000000, RX-RATE-MBPS:1000}
+var_format={RX-RATE-PPS:%dMpps, RX-RATE-MBPS:%dGbps}
+
+graph_serie={NTHREADS}
+graph_type={RX-RATE-MBPS:barplot,RX-RATE-PPS:barplot}
+graph_legend_loc={RX-RATE-MBPS:outer upper center,RX-RATE-PPS:outer upper right}
+graph_legend_ncol={3}
+graph_tick_params={direction:in,which:both,axis:both,grid_linestyle:dotted,bottom:true,top:true,right:true,left:true,grid_color:#444444}
+var_grid=true
+graph_fillstyle=none
+graph_legend_params={fancybox:0,edgecolor:black,framealpha:1.0}
+
+accept_zero={LOSE-RATE}
+timeout=60
+n_runs=3
+
+%include ../shared/script-workload.npf
+
+%include ../shared/script-generator.npf
+
+%include dpdk-baseline.click
+
+%include ../shared/cfg.lua
+
+%include ../shared/pyexit.npf

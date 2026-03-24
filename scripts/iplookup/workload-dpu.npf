@@ -1,0 +1,13 @@
+%bf2:script@bf2
+
+sudo killall -9 click
+sleep 1
+sleep $ENERGYDELAY
+sudo ${EXEC_PATH_DPU}/bin/click --dpdk -c 0xff -n 4 -a ${self:0:pci} -- -e "FromDPDKDevice(0, NDESC ${NDESC}, MAXTHREADS ${NTHREADS}) -> EtherMirror() -> Strip(14) -> GetIPAddress(16) -> LinearIPLookup(CACHE_FILE ${PATH_TO_TABLE}${TABLE_SIZE}.bin) -> Unstrip(14) -> ToDPDKDevice(0, NDESC ${NDESC}); DriverManager(print '', print 'EVENT APP_READY', wait);"
+
+%bf3:script@bf3
+
+sudo killall -9 click
+sleep 1
+sleep $ENERGYDELAY
+sudo ${EXEC_PATH_DPU}/bin/click --dpdk -c 0xffff -n 4 -a ${self:0:pci} -- -e "FromDPDKDevice(0, NDESC ${NDESC}, MAXTHREADS ${NTHREADS}) -> EtherMirror() -> Strip(14) -> GetIPAddress(16) -> LinearIPLookup(CACHE_FILE ${PATH_TO_TABLE}${TABLE_SIZE}.bin) -> Unstrip(14) -> ToDPDKDevice(0, NDESC ${NDESC}); DriverManager(print '', print 'EVENT APP_READY', wait);"

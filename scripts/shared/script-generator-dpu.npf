@@ -1,0 +1,6 @@
+%bf2|bf3:script@generatordpu sudo=true delay=5
+killall -9 pktgen
+export LD_LIBRARY_PATH=${GENERATOR_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $GENERATOR_PATH -l 0-7 -n 4 -a ${GENERATOR_PORT_DPU} -- -m [1/2/3:4/5/6].0 -P -f cfg-dpu.lua
+
+
